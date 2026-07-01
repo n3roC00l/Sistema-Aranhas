@@ -10,16 +10,18 @@
 #define NUM_TERRARIOS  3
 
 // ─── Pinos dos relés ──────────────────────────────────────────────────────────
-// GPIOs 25/26/27: livres de strapping de boot e de SPI interna.
-#define PINO_RELE_T1  25   // T1 — Lasiodora klugi
-#define PINO_RELE_T2  26   // T2 — Monocentropus balfouri
-#define PINO_RELE_T3  27   // T3 — Heteroscodra maculata
+// D5/D6/D7 (GPIO14/12/13): livres de strapping de boot.
+#define PINO_RELE_T1  14   // D5 — T1 — Lasiodora klugi
+#define PINO_RELE_T2  12   // D6 — T2 — Monocentropus balfouri
+#define PINO_RELE_T3  13   // D7 — T3 — Heteroscodra maculata
 
 // ─── Pinos dos sensores DHT22 ────────────────────────────────────────────────
 // Requerem resistor pull-up externo de 10 kΩ para 3.3V na linha de dados.
-#define PINO_DHT_T1    4
-#define PINO_DHT_T2    5
-#define PINO_DHT_T3   13
+// GPIO0 (D3): pull-up externo satisfaz requisito de strapping de boot;
+// a linha DHT22 fica HIGH no idle, o que é compatível com esse requisito.
+#define PINO_DHT_T1    5   // D1
+#define PINO_DHT_T2    4   // D2
+#define PINO_DHT_T3    0   // D3
 
 // ─── Polaridade do módulo relé ────────────────────────────────────────────────
 // VALIDAR com teste físico antes de gravar no hardware definitivo.
@@ -72,9 +74,10 @@
 #define INTERVALO_LEITURA_MS  2000UL
 
 // ─── Watchdog ─────────────────────────────────────────────────────────────────
-// Se o loop() travar por mais que este tempo, o ESP32 reinicia.
-// Ao reiniciar, setup() coloca os relés em estado seguro novamente.
-#define WATCHDOG_TIMEOUT_S  10
+// No ESP8266, o watchdog de hardware (~8s) é automático e não configurável.
+// O watchdog de software (~3.2s padrão) é alimentado pelo yield() no loop().
+// Em ambos os casos, ao reiniciar o ESP8266 executa setup() novamente,
+// que coloca os relés em estado seguro como primeira instrução.
 
 // ─── Estrutura de configuração imutável por terrário ─────────────────────────
 struct ConfigTerrario {

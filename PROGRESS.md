@@ -102,3 +102,4 @@ Todas registradas em `docs/decisoes-arquitetura.md`. Resumo:
 |---|---|---|
 | 2026-06-30 | Fase 0 | Setup completo, commit inicial realizado |
 | 2026-06-30 | Fase 1 | Firmware completo: config.h, main.cpp, platformio.ini |
+| 2026-06-30 | Alteração de escopo | MCU alterado de ESP32 WROOM-32 para ESP8266 D1; GPIOs e watchdog atualizados |

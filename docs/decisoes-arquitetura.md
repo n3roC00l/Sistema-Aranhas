@@ -14,20 +14,37 @@ Documento de referência para todas as decisões técnicas já tomadas e ratific
 
 | Componente | Escolha | Justificativa |
 |---|---|---|
-| MCU | ESP32 WROOM-32 (chip D0WDQ6) | Capacidade Wi-Fi, GPIO suficiente, suporte PlatformIO maduro |
+| MCU | ESP8266MOD — Wemos D1 (Arduino compatible) | Alteração de escopo aprovada em 2026-06-30; Wi-Fi nativo, GPIO suficiente, 5V disponível no pino da placa, suporte PlatformIO maduro |
 | Sensores | 3x DHT22 | Temperatura + umidade em um sensor; precisão adequada para husbandry |
-| Atuação | Módulo relé 4 canais 5V | 1 relé por terrário + 1 de reserva; isolação lógica/potência |
+| Atuação | Módulo relé 4 canais 5V (SRD-05VDC-SL-C, optoacoplado, JD-VCC) | 1 relé por terrário + 1 de reserva; isolação lógica/potência |
 | Aquecedores | 3x tapetes 5W | Um por face lateral menor do terrário; cria gradiente linear ao longo dos 30cm |
+
+> **Nota de escopo:** o projeto foi iniciado com ESP32 WROOM-32 e alterado para ESP8266 D1 antes da primeira gravação em hardware. Não há firmware legado a migrar.
 
 ### Pinagem dos relés
 
-| Relé | GPIO | Terrário |
-|---|---|---|
-| Relé 1 | GPIO 25 | Terrário 1 — Lasiodora klugi |
-| Relé 2 | GPIO 26 | Terrário 2 — Monocentropus balfouri |
-| Relé 3 | GPIO 27 | Terrário 3 — Heteroscodra maculata |
+| Relé | Pino D1 | GPIO | Terrário |
+|---|---|---|---|
+| Relé 1 | D5 | GPIO14 | Terrário 1 — Lasiodora klugi |
+| Relé 2 | D6 | GPIO12 | Terrário 2 — Monocentropus balfouri |
+| Relé 3 | D7 | GPIO13 | Terrário 3 — Heteroscodra maculata |
 
-**Pinos evitados:** GPIO 0, 2, 12, 15 (strapping de boot) e GPIO 6–11 (flash SPI interna). GPIOs 25/26/27 não possuem função de strapping.
+### Pinagem dos sensores DHT22
+
+| Sensor | Pino D1 | GPIO | Terrário | Observação |
+|---|---|---|---|---|
+| DHT22 T1 | D1 | GPIO5 | Lasiodora klugi | — |
+| DHT22 T2 | D2 | GPIO4 | Monocentropus balfouri | — |
+| DHT22 T3 | D3 | GPIO0 | Heteroscodra maculata | Pull-up externo 10kΩ satisfaz requisito de strapping de boot |
+
+**Pinos evitados para relés:** D3/GPIO0, D4/GPIO2 (strapping HIGH), D8/GPIO15 (strapping LOW), D0/GPIO16 (sem interrupções — inadequado para DHT22).
+
+### Alimentação do módulo relé com ESP8266 D1
+
+O D1 expõe pino 5V (proveniente do USB). A solução JD-VCC se mantém:
+- `JD-VCC` → pino 5V do D1 (alimenta bobinas dos relés)
+- `VCC` → pino 3.3V do D1 (alimenta optoacopladores)
+- Remover jumper entre JD-VCC e VCC antes de ligar
 
 ---
 
@@ -52,7 +69,7 @@ O módulo (SRD-05VDC-SL-C, optoacoplado, com JD-VCC) é provavelmente **ativo em
 
 ### 3.2 Fail-safe e histerese são locais
 
-A lógica de controle térmico (histerese) e o fail-safe **rodam sempre no firmware do ESP32**, sem dependência de rede, dashboard ou backend. Se a conexão cair, o sistema continua funcionando corretamente.
+A lógica de controle térmico (histerese) e o fail-safe **rodam sempre no firmware do ESP8266**, sem dependência de rede, dashboard ou backend. Se a conexão cair, o sistema continua funcionando corretamente.
 
 ### 3.3 Comandos remotos são sugestões
 
@@ -79,7 +96,7 @@ O terrário 2 é a exceção: origem árida (Socotra), sensível à superumidifi
 | Fase | Conteúdo | Status |
 |---|---|---|
 | 0 | Setup: estrutura de repositório, documentação inicial | ✅ Concluída |
-| 1 | Firmware ESP32: DHT22, histerese, fail-safe, watchdog | Pendente |
+| 1 | Firmware ESP8266 D1: DHT22, histerese, fail-safe, watchdog | ✅ Concluída |
 | 2 | Persistência e comunicação (decisão em aberto) | Pendente |
 | 3 | Dashboard em tempo real | Pendente |
 | 4 | Página de histórico | Pendente |
@@ -96,6 +113,6 @@ O terrário 2 é a exceção: origem árida (Socotra), sensível à superumidifi
 Ainda não definida. Opções a avaliar quando o hardware auxiliar disponível for informado:
 
 - **(a) Backend local** em Raspberry Pi ou mini-PC já ligado 24/7, recebendo dados via WebSocket/MQTT e persistindo em SQLite ou banco timeseries.
-- **(b) Módulo SD card** conectado diretamente ao ESP32 (limitação: requer acesso físico para consulta).
+- **(b) Módulo SD card** conectado diretamente ao ESP8266 (limitação: requer acesso físico para consulta).
 
 A decisão depende do hardware auxiliar disponível na residência do mantenedor.

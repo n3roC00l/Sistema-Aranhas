@@ -1,10 +1,9 @@
 #include <Arduino.h>
 #include <DHT.h>
-#include <esp_task_wdt.h>
 #include "config.h"
 
 // =============================================================================
-// SISTEMA ARANHAS — Firmware ESP32
+// SISTEMA ARANHAS — Firmware ESP8266 D1
 // Controle de termorregulação para 3 terrários de tarântulas.
 //
 // Regra de segurança inegociável: a lógica de histerese e o fail-safe
@@ -177,22 +176,16 @@ void setup() {
     delay(500);
     Serial.println("\n========================================");
     Serial.println(" Sistema Aranhas — iniciando");
+    Serial.println(" MCU: ESP8266 D1");
     Serial.println("========================================");
     Serial.printf(" Polaridade: ACTIVE=%s  SAFE=%s\n",
                   RELAY_ACTIVE_LEVEL == LOW ? "LOW" : "HIGH",
                   RELAY_SAFE_LEVEL   == LOW ? "LOW" : "HIGH");
 
-    // 3. Watchdog de hardware — reinicia o ESP32 se o loop() travar.
-    //    Ao reiniciar, setup() executa novamente e os relés voltam ao estado seguro.
-    //
-    //    Se houver erro de compilação aqui, sua versão usa a API do ESP-IDF 5.x:
-    //      esp_task_wdt_config_t wdt_cfg = {
-    //          .timeout_ms = WATCHDOG_TIMEOUT_S * 1000UL,
-    //          .trigger_panic = true
-    //      };
-    //      esp_task_wdt_reconfigure(&wdt_cfg);
-    esp_task_wdt_init(WATCHDOG_TIMEOUT_S, true);
-    esp_task_wdt_add(NULL);
+    // 3. Watchdog do ESP8266
+    //    O watchdog de hardware (~8s) é automático e não configurável.
+    //    O watchdog de software é alimentado pelo yield() no loop().
+    //    Ao resetar por watchdog, setup() executa novamente — relés voltam ao estado seguro.
 
     // 4. Sensores DHT22
     dht1.begin();
@@ -204,8 +197,8 @@ void setup() {
         estado[i] = { 0.0f, 0.0f, false, false, 0 };
     }
 
-    Serial.println(" DHT22: T1=GPIO4  T2=GPIO5  T3=GPIO13");
-    Serial.println(" Reles: T1=GPIO25 T2=GPIO26 T3=GPIO27");
+    Serial.println(" DHT22: T1=D1(GPIO5)  T2=D2(GPIO4)  T3=D3(GPIO0)");
+    Serial.println(" Reles: T1=D5(GPIO14) T2=D6(GPIO12) T3=D7(GPIO13)");
     Serial.println(" Aguardando primeira leitura (2s)...");
 }
 
@@ -214,7 +207,9 @@ void setup() {
 // =============================================================================
 
 void loop() {
-    esp_task_wdt_reset();
+    // yield() alimenta o watchdog de software do ESP8266 e cede tempo ao
+    // stack Wi-Fi — obrigatório em loops que não usam delay().
+    yield();
 
     // Leitura cadenciada sem delay() — mantém o loop responsivo para
     // futuras extensões (WebSocket, MQTT) na Fase 2.
