@@ -42,9 +42,13 @@ O aquecedor deve estar **desligado** em todos os cenários de falha:
 - Watchdog timeout
 
 **Implementação obrigatória:**
-- Pull-down físico de 10 kΩ nos pinos de controle dos relés
-- Primeira instrução do `setup()`: escrita explícita de `LOW` em todos os pinos de relé
-- Módulo relé com lógica ativa em HIGH (relé energiza com sinal HIGH)
+- Resistor de 10 kΩ nos pinos de controle dos relés (pull-up ou pull-down — depende da polaridade, ver abaixo)
+- Primeira instrução do `setup()`: escrita explícita do nível seguro em todos os pinos de relé
+- JD-VCC do módulo separado do VCC: JD-VCC → 5V (bobinas), VCC → 3.3V ESP32 (lógica)
+
+**Polaridade do módulo — pendente de teste físico:**
+
+O módulo (SRD-05VDC-SL-C, optoacoplado, com JD-VCC) é provavelmente **ativo em LOW** quando JD-VCC está separado, mas isso deve ser confirmado com o teste descrito em `especificacoes-hardware.md` antes de gravar o firmware. O firmware da Fase 1 terá uma constante `RELAY_ACTIVE_LEVEL` configurável para não depender desta confirmação durante o desenvolvimento.
 
 ### 3.2 Fail-safe e histerese são locais
 

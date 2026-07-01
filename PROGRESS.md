@@ -43,9 +43,9 @@ Todas registradas em `docs/decisoes-arquitetura.md`. Resumo:
 
 ### Suposições que precisam ser validadas
 
-1. **Setpoints como limites rígidos:** os valores de temperatura e umidade em `docs/decisoes-arquitetura.md` são pontos de partida — confirmar com o mantenedor antes de travar no firmware.
-2. **Pinos DHT22:** não definidos ainda; será decidido conjuntamente na Fase 1.
-3. **Lógica HIGH/LOW do módulo relé:** assumido que o módulo relé ativa com sinal HIGH no pino IN. Confirmar com o modelo exato do módulo antes de gravar o firmware.
+1. **Setpoints como limites rígidos:** os valores de temperatura e umidade são pontos de partida — confirmado pelo mantenedor que serão validados antes de travar no firmware. ✅
+2. **Pinos DHT22:** definidos — GPIO 4 (T1), GPIO 5 (T2), GPIO 13 (T3). Confirmado pelo mantenedor. ✅
+3. **Polaridade do módulo relé (crítico — bloqueia gravação do firmware):** módulo identificado como SRD-05VDC-SL-C com optoacoplador e pino JD-VCC. Solução de compatibilidade 3.3V/5V: separar JD-VCC (→ 5V) do VCC (→ 3.3V ESP32). Polaridade (ativo em HIGH ou LOW) ainda não confirmada — componentes ainda não chegaram. Teste descrito em `docs/especificacoes-hardware.md`. O firmware será desenvolvido com constante `RELAY_ACTIVE_LEVEL` configurável para não bloquear o desenvolvimento.
 
 ---
 
