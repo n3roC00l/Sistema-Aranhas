@@ -49,8 +49,56 @@ Todas registradas em `docs/decisoes-arquitetura.md`. Resumo:
 
 ---
 
+---
+
+## Sessão 2026-06-30 — Fase 1: Firmware ESP32
+
+### O que foi feito
+
+- Atualizado `platformio.ini` com dependências DHT + Adafruit Unified Sensor e monitor_speed.
+- Criado `include/config.h` com todas as constantes configuráveis:
+  - Pinos de relé (GPIO 25/26/27) e DHT22 (GPIO 4/5/13)
+  - Constante `RELAY_ACTIVE_LEVEL` / `RELAY_SAFE_LEVEL` para configurar polaridade sem reescrever a lógica
+  - Setpoints individuais por terrário (tempMin/Max, histerese, umidMin/Max)
+  - Limites de validação de leitura e temporização
+- Criado `src/main.cpp` com firmware completo:
+  - Primeiro passo do `setup()`: pinos como OUTPUT + `relesSeguros()` — elimina pulso no boot
+  - Watchdog de hardware (10s) com reinício + volta ao estado seguro automaticamente
+  - Leitura não-bloqueante com `millis()` — loop livre para futuras extensões (Fase 2)
+  - Validação de leitura DHT22: NaN, fora de range físico → relé abre imediatamente
+  - Histerese individual por terrário (banda morta: liga abaixo de tempMin-H, desliga acima de tempMax+H)
+  - Alertas de umidade individuais: T1/T3 alertam por déficit; T2 (balfouri) alerta por déficit E excesso
+  - Saída Serial estruturada pronta para integração com Fase 2
+
+### Decisões técnicas tomadas
+
+- **Polaridade do relé:** implementada com `RELAY_ACTIVE_LEVEL = LOW` (provável) e `RELAY_SAFE_LEVEL = HIGH`. Para inverter, basta trocar os dois valores em `config.h` — nenhuma outra linha muda.
+- **Fail-safe:** qualquer leitura inválida (NaN ou fora de range) abre o relé imediatamente, sem aguardar múltiplas falhas. Segurança dos animais tem prioridade sobre disponibilidade do aquecedor.
+- **Loop não-bloqueante:** uso de `millis()` em vez de `delay()` prepara o loop para receber código de rede (WebSocket/MQTT) na Fase 2 sem refatoração.
+- **Watchdog:** ao ser disparado, o ESP32 reinicia e `setup()` volta a executar — os relés são colocados em estado seguro automaticamente, sem intervenção humana.
+- **Nota de compatibilidade watchdog:** se a versão ESP32 Arduino 3.x (ESP-IDF 5.x) gerar erro de compilação no `esp_task_wdt_init()`, substituir pelo bloco comentado no próprio código.
+
+### Pendente / próximo passo
+
+**Validação antes de gravar o firmware no hardware real:**
+1. Testar polaridade do módulo relé (procedimento em `docs/especificacoes-hardware.md`) e atualizar `RELAY_ACTIVE_LEVEL` em `config.h` se necessário.
+2. Verificar resistores pull-up de 10 kΩ na linha de dados dos DHT22 (GPIO 4/5/13).
+3. Compilar e gravar; monitorar Serial a 115200 baud para confirmar leituras válidas.
+
+**Fase 2 — Persistência e comunicação** (aguardando aprovação e definição de hardware auxiliar disponível):
+- Definir se o histórico será armazenado em backend local (Raspberry Pi / mini-PC) ou módulo SD card.
+- O usuário informará qual hardware tem disponível para decidir a arquitetura.
+
+### Suposições que precisam ser validadas
+
+1. **Polaridade do relé:** `RELAY_ACTIVE_LEVEL = LOW`. Confirmar com teste físico.
+2. **API do watchdog:** código usa `esp_task_wdt_init(segundos, panic)` — compatível com ESP-IDF 4.x. Se usar ESP32 Arduino 3.x, usar API comentada no código.
+
+---
+
 ## Histórico de sessões
 
 | Data | Fase | Resultado |
 |---|---|---|
 | 2026-06-30 | Fase 0 | Setup completo, commit inicial realizado |
+| 2026-06-30 | Fase 1 | Firmware completo: config.h, main.cpp, platformio.ini |
